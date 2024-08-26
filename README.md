@@ -11,6 +11,9 @@
 ```sh
 DIR=".$(openssl rand -hex 8)" && git clone https://github.com/cooscode/serv.git "$HOME/$DIR" && bash "$HOME/$DIR/serv.sh"
 ```
+## Tutorial
+
+详见[教程](TUTORIAL.md)
 
 ## Disclaimer
 
