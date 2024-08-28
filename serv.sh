@@ -10,6 +10,7 @@ yellow() { echo -e "\e[1;33m$1\033[0m"; }
 purple() { echo -e "\e[1;35m$1\033[0m"; }
 input() { read -rp "$(red "$1")" "$2"; }
 
+## gen dirs
 DIR=$(dirname "$(readlink -f "$0")")
 BIN=${DIR}/bin
 if [[ ! -d "${BIN}" ]]; then
@@ -20,28 +21,33 @@ if [[ ! -d "${CONFIG}" ]]; then
   mkdir -p "${CONFIG}"
 fi
 
-if [ -f "$DIR/UUID" ]; then
-  UUID=$(cat "$DIR/UUID")
+## files
+NODE_INFO="${CONFIG}/NODE_INFO.txt"
+NODE_TMP="/tmp/NODE_INFO_TMP_$(openssl rand -hex 16)"
+CONFIG_FILE="$(ls ${CONFIG} | grep config.json)"
+[[ ! -z "$CONFIG_FILE" ]] && CONFIG_FILE="${CONFIG_FILE##*/}"
+
+## gen uuid
+if [ -f "$CONFIG/UUID" ]; then
+  UUID=$(cat "$CONFIG/UUID")
 else
   UUID=$(uuidgen)
-  echo -n "$UUID" >"$DIR/UUID"
+  echo -n "$UUID" >"$CONFIG/UUID"
 fi
 
+## default global variables
 PROXY_HOST="www.visa.com.sg"
 PROXY_IP="$(
   ipv6="$(curl -s --max-time 1 ipv6.ip.sb)"
   [ -z "$ipv6" ] && echo "$(curl -s ipv4.ip.sb)" || echo "[$ipv6]"
 )"
 PROXY="$PROXY_IP"
-CDN_YN="n"
-ARGO_YN=
-ORIGIN_RULE_YN="n"
+ARGO_YN="n"
 TLS=
 NODE_TYPE=
+[[ ! -z "$CONFIG_FILE" ]] && NODE_TYPE="$(echo $CONFIG_FILE | cut -d "_" -f1)"
 declare -i IN_PORT=
 declare -i PORT=
-CDN_URL=
-ARGO_URL=
 CDN_HOST=
 ARGO_HOST=
 ARGO_PROXY="www.visa.com.sg"
@@ -89,7 +95,7 @@ function install_cloudflared() {
 }
 
 function check_ps() {
-  pgrep "$1" >>/dev/null && printf "0" || printf "1"
+  pgrep -x "$1" >>/dev/null && printf "0" || printf "1"
 }
 
 function launch() {
@@ -103,14 +109,14 @@ function launch() {
     kill_ps "$1" "$2"
   fi
   if [[ "$1" == "sing-box" ]]; then
-    if [[ -z "$NODE_TYPE" || ! -f "${CONFIG}/${NODE_TYPE}_config.json" ]]; then
-      red "请先生成${NODE_TYPE}配置文件，再启动$1"
+    if [[ -z "$NODE_TYPE" ]]; then
+      red "请先生成config.json配置文件，再启动$1"
       return
     fi
     nohup ${BIN}/web run -c ${CONFIG}/${NODE_TYPE}_config.json >/dev/null 2>&1 &
   else
     if [[ -z "$TOKEN" ]]; then
-      red "无法启动 $1: 无法获取 TOKEN，请设置启用 argo 隧道并填写 TOKEN"
+      red "无法启动 $1: 无法获取 TOKEN，请先启用 argo 隧道并填写 TOKEN"
       return
     fi
     nohup ${BIN}/bot tunnel --edge-ip-version auto --no-autoupdate --protocol http2 run --token $TOKEN >/dev/null 2>&1 &
@@ -140,93 +146,6 @@ function kill_ps() {
 function quit_services() {
   kill_ps "sing-box" "web"
   kill_ps "cloudflared" "bot"
-}
-
-function select_node_args() {
-  while [[ 1 ]]; do
-    input "请输入UUID [$UUID]: " ID
-    if [[ "$ID" =~ ^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[89abAB][a-fA-F0-9]{3}-[a-fA-F0-9]{12} ]]; then
-      UUID=$ID
-      break
-    elif [[ -z "$ID" ]]; then
-      break
-    else
-      red "请输入正确的UUID !!!"
-    fi
-  done
-
-  while [[ 1 ]]; do
-    input "是否启用cloudflare cdn [y/N]: " CDN
-    if [[ "$CDN" =~ ^[ynYN]$ ]]; then
-      CDN_YN="$CDN"
-      break
-    elif [[ -z "$CDN" ]]; then
-      break
-    else
-      red "请重新输入是否启用cloudflare cdn !!!"
-      continue
-    fi
-  done
-
-  if [[ "$CDN_YN" =~ ^[yY]$ ]]; then
-    while [[ 1 ]]; do
-      input "请输入你的CF CDN域名: " cdn_host
-      if [[ -z "$cdn_host" ]]; then
-        red "请重新输入你的CF CDN域名: "
-        continue
-      else
-        CDN_HOST="$cdn_host"
-        break
-      fi
-    done
-
-    while [[ 1 ]]; do
-      input "是否有 Origin Rules 规则 [y/N]: " rule
-      if [[ -z "$rule" || "$rule" =~ ^[nN]$ ]]; then
-        break
-      elif [[ "$rule" =~ ^[yY]$ ]]; then
-        ORIGIN_RULE_YN="$rule"
-        break
-      else
-        red "请重新输入是否有 Origin Rules 规则!!!"
-      fi
-    done
-
-    if [[ "$ORIGIN_RULE_YN" =~ ^[yY]$ ]]; then
-      while [[ 1 ]]; do
-        input "Origin Rules 规则是否启用tls [y/N]: " tls
-        if [[ "$tls" =~ ^[nN]$ || -z "$tls" ]]; then
-          PORT=80
-          break
-        elif [[ "$tls" =~ ^[yY]$ ]]; then
-          TLS='tls'
-          PORT=443
-          break
-        else
-          red "请重新输入是否启用tls!!!"
-        fi
-      done
-
-      PROXY="$PROXY_HOST"
-      input "请输入优选IP或域名 [$PROXY]: " IP
-      if [[ ! -z "$IP" ]]; then
-        PROXY="$IP"
-      fi
-    fi
-  fi
-
-  while [[ 1 ]]; do
-    input "请输入服务器开放的TCP端口号: " port
-    if [[ "$port" != "0" && "$port" -ge "1" && "$port" -le "65535" ]]; then
-      IN_PORT="$port"
-      if [[ "$PORT" == "0" ]]; then
-        PORT="$port"
-      fi
-      break
-    else
-      red "请重新输入端口号!!!"
-    fi
-  done
 }
 
 function gen_config() {
@@ -387,20 +306,93 @@ EOF
   yellow "配置文件生成完成"
 }
 
-function check_argo() {
-  local ARGO
+function gen_uuid() {
   while [[ 1 ]]; do
-    input "是否启用ARGO隧道 [y/N]: " ARGO
-    if [[ "$ARGO" =~ ^[yY]$ ]]; then
-      ARGO_YN="y"
+    input "请输入UUID [$UUID]: " ID
+    if [[ "$ID" =~ ^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[89abAB][a-fA-F0-9]{3}-[a-fA-F0-9]{12} ]]; then
+      UUID=$ID
       break
-    elif [[ -z "$ARGO" || "$ARGO" =~ ^[nN]$ ]]; then
-      ARGO_YN="n"
-      return
+    elif [[ -z "$ID" ]]; then
+      break
     else
-      red "请重新输入..."
+      red "请输入正确的UUID !!!"
     fi
   done
+}
+
+function gen_cdn_node() {
+
+  gen_uuid
+
+  local CDN_YN
+  while [[ 1 ]]; do
+    input "是否启用cloudflare cdn [y/N]: " CDN
+    if [[ "$CDN" =~ ^[ynYN]$ ]]; then
+      CDN_YN="$CDN"
+      break
+    elif [[ -z "$CDN" ]]; then
+      CDN_YN="n"
+      break
+    else
+      red "请重新输入是否启用cloudflare cdn !!!"
+      continue
+    fi
+  done
+
+  if [[ "$CDN_YN" =~ ^[yY]$ ]]; then
+    while [[ 1 ]]; do
+      input "请输入你的CF CDN域名: " cdn_host
+      if [[ -z "$cdn_host" ]]; then
+        red "请重新输入你的CF CDN域名: "
+        continue
+      else
+        CDN_HOST="$cdn_host"
+        break
+      fi
+    done
+
+    local ORIGIN_RULE_YN
+    while [[ 1 ]]; do
+      input "是否有 Origin Rules 规则 [y/N]: " rule
+      if [[ -z "$rule" || "$rule" =~ ^[nN]$ ]]; then
+        ORIGIN_RULE_YN="n"
+        break
+      elif [[ "$rule" =~ ^[yY]$ ]]; then
+        ORIGIN_RULE_YN="$rule"
+        break
+      else
+        red "请重新输入是否有 Origin Rules 规则!!!"
+      fi
+    done
+
+    if [[ "$ORIGIN_RULE_YN" =~ ^[yY]$ ]]; then
+      while [[ 1 ]]; do
+        input "Origin Rules 规则是否启用tls [y/N]: " tls
+        if [[ "$tls" =~ ^[nN]$ || -z "$tls" ]]; then
+          PORT=80
+          break
+        elif [[ "$tls" =~ ^[yY]$ ]]; then
+          TLS='tls'
+          PORT=443
+          break
+        else
+          red "请重新输入是否启用tls!!!"
+        fi
+      done
+
+      PROXY="$PROXY_HOST"
+      input "请输入优选IP或域名 [$PROXY]: " IP
+      if [[ ! -z "$IP" ]]; then
+        PROXY="$IP"
+      fi
+    fi
+  fi
+
+}
+
+function gen_argo_node() {
+
+  gen_uuid
 
   local argo_host
   while [[ 1 ]]; do
@@ -443,36 +435,50 @@ function check_argo() {
   fi
 }
 
+function save_node_to_file() {
+  mv "${NODE_TMP}" "${NODE_INFO}"
+}
+
 function gen_url() {
-  local TYPE=$1
+  local TYPE="$1"
   yellow '生成的节点如下:'
   if [[ "$TYPE" == "vless" ]]; then
-    CDN_URL="${TYPE}://${UUID}@${PROXY}:${PORT}?security=${TLS}&sni=${CDN_HOST}&fp=random&type=ws&path=/${TYPE}?ed%3D2048&host=${CDN_HOST}&encryption=none#vless1"
-    echo "$CDN_URL" >>"${DIR}/NODE_INFO.txt"
-    if [[ ! -z "$ARGO_HOST" ]]; then
+    if [[ "$ARGO_YN" =~ ^[nN]$ ]]; then
+      local CDN_URL="${TYPE}://${UUID}@${PROXY}:${PORT}?security=${TLS}&sni=${CDN_HOST}&fp=random&type=ws&path=/${TYPE}?ed%3D2048&host=${CDN_HOST}&encryption=none#vless1"
+      echo "$CDN_URL" >"${NODE_TMP}"
+    else
       ARGO_URL="${TYPE}://${UUID}@${ARGO_PROXY}:443?security=tls&sni=${ARGO_HOST}&fp=random&type=ws&path=/${TYPE}?ed%3D2048&host=${ARGO_HOST}&encryption=none#vless2"
-      echo "$ARGO_URL" >>"${DIR}/NODE_INFO.txt"
+      echo "$ARGO_URL" >"${NODE_TMP}"
     fi
   fi
   if [[ "$TYPE" == "vmess" ]]; then
-    local CDN_NODE_JSON="{\"add\":\"${PROXY}\",\"aid\":\"0\",\"host\":\"${CDN_HOST}\",\"id\":\"${UUID}\",\"net\":\"ws\",\"path\":\"/${TYPE}?ed=2048\",\"port\":\"${PORT}\",\"ps\":\"PL-SERV00\",\"scy\":\"none\",\"sni\":\"${CDN_HOST}\",\"tls\":\"${TLS}\",\"type\":\"none\",\"v\":\"2\"}"
-    CDN_URL="${TYPE}://$(echo -n "${CDN_NODE_JSON}" | base64 -w0)"
-    echo "$CDN_URL" >>"${DIR}/NODE_INFO.txt"
-    if [[ ! -z "$ARGO_HOST" ]]; then
-      ARGO_NODE_JSON="{\"add\":\"${PROXY}\",\"aid\":\"0\",\"host\":\"${ARGO_HOST}\",\"id\":\"${UUID}\",\"net\":\"ws\",\"path\":\"/${TYPE}?ed=2048\",\"port\":\"${PORT}\",\"ps\":\"PL-SERV00\",\"scy\":\"none\",\"sni\":\"${ARGO_HOST}\",\"tls\":\"${TLS}\",\"type\":\"none\",\"v\":\"2\"}"
-      ARGO_URL="${TYPE}://$(echo -n "${ARGO_NODE_JSON}" | base64 -w0)"
-      echo "$ARGO_URL" >>"${DIR}/NODE_INFO.txt"
+    if [[ "$ARGO_YN" =~ ^[nN]$ ]]; then
+      local CDN_NODE_JSON="{\"add\":\"${PROXY}\",\"aid\":\"0\",\"host\":\"${CDN_HOST}\",\"id\":\"${UUID}\",\"net\":\"ws\",\"path\":\"/${TYPE}?ed=2048\",\"port\":\"${PORT}\",\"ps\":\"PL-SERV00\",\"scy\":\"none\",\"sni\":\"${CDN_HOST}\",\"tls\":\"${TLS}\",\"type\":\"none\",\"v\":\"2\"}"
+      local CDN_URL="${TYPE}://$(echo -n "${CDN_NODE_JSON}" | base64 -w0)"
+      echo "$CDN_URL" >"${NODE_TMP}"
+    else
+      local ARGO_NODE_JSON="{\"add\":\"${PROXY}\",\"aid\":\"0\",\"host\":\"${ARGO_HOST}\",\"id\":\"${UUID}\",\"net\":\"ws\",\"path\":\"/${TYPE}?ed=2048\",\"port\":\"${PORT}\",\"ps\":\"PL-SERV00\",\"scy\":\"none\",\"sni\":\"${ARGO_HOST}\",\"tls\":\"${TLS}\",\"type\":\"none\",\"v\":\"2\"}"
+      local ARGO_URL="${TYPE}://$(echo -n "${ARGO_NODE_JSON}" | base64 -w0)"
+      echo "$ARGO_URL" >"${NODE_TMP}"
     fi
   fi
-  cat "${DIR}/NODE_INFO.txt"
+  cat "${NODE_TMP}"
 }
 
 function get_exist_nodes() {
-  local TYPE
-  if [[ -f "${DIR}/NODE_INFO.txt" ]]; then
-    yellow "已存在如下节点信息:\n\n$(cat ${DIR}/NODE_INFO.txt)\n\n可以使用命令 'cat ${DIR}/NODE_INFO.txt' 查看节点信息"
+  if [[ -f "${NODE_INFO}" ]]; then
+    yellow "已存在如下节点信息:\n\n$(cat ${NODE_INFO})\n\n可以使用命令 'cat ${NODE_INFO}' 查看节点信息"
   else
     red "不存在节点信息"
+  fi
+}
+
+function restart_services() {
+  if [[ "$(check_ps "web")" == "0" ]]; then
+    launch_singbox
+  fi
+  if [[ "$(check_ps "bot")" == "0" ]]; then
+    launch_cloudflared
   fi
 }
 
@@ -481,12 +487,26 @@ function gen_node() {
   green "2. 生成vmess节点"
   green "3. 清除节点信息"
   green "4. 获取已有节点"
-  green "0. 回到开始菜单"
+  green "0. 返回并保存"
   local TYPE
+  local port
+  local ARGO
   while [[ 1 ]]; do
     input "请输入选择(0-4): " VAR
     case "$VAR" in
     1 | 2)
+      ## get IN_PORT
+      while [[ 1 ]]; do
+        input "请输入服务器开放的TCP端口号: " port
+        if [[ "$port" -ge "1" && "$port" -le "65535" ]]; then
+          IN_PORT="$port"
+          PORT="$port"
+          break
+        else
+          red "请重新输入端口号!!!"
+        fi
+      done
+
       if [[ "$VAR" == "1" ]]; then
         TYPE="vless"
       else
@@ -495,35 +515,56 @@ function gen_node() {
 
       NODE_TYPE="$TYPE"
 
-      select_node_args
-      check_argo
+      while [[ 1 ]]; do
+        input "是否启用ARGO隧道 [y/N]: " ARGO
+        if [[ -z "$ARGO" || "$ARGO" =~ ^[nN]$ ]]; then
+          gen_cdn_node
+          break
+        elif [[ "$ARGO" =~ ^[yY]$ ]]; then
+          ARGO_YN='y'
+          gen_argo_node
+          break
+        else
+          red "请重新输入..."
+        fi
+      done
 
-      [ -f "${DIR}/NODE_INFO.txt" ] && rm -f "${DIR}/NODE_INFO.txt"
       gen_url "$NODE_TYPE"
-      gen_config
 
       PROXY="$PROXY_IP"
       ARGO_PROXY="www.visa.com.sg"
-      CDN_YN="n"
-      ORIGIN_RULE_YN="n"
+      ARGO_YN='n'
       TLS=
-      PORT=
-      IN_PORT=
-      CDN_URL=
-      ARGO_URL=
       CDN_HOST=
       ARGO_HOST=
       ;;
     3)
-      if [[ -f "${DIR}/NODE_INFO.txt" ]]; then
-        rm -f "${DIR}/NODE_INFO.txt"
-      fi
+      rm -f "${NODE_INFO}"
       yellow "节点信息清除完成"
       ;;
     4)
       get_exist_nodes
       ;;
     0)
+      local save_yn
+      while [[ 1 ]]; do
+        input "是否保存节点 [y/N]: " save_yn
+        if [[ "$save_yn" =~ ^[yY]$ ]]; then
+          if [[ -z "$NODE_TYPE" ]]; then
+            break
+          fi
+          gen_config
+          save_node_to_file
+          restart_services
+          break
+        elif [[ -z "$save_yn" || "$save_yn" =~ ^[nN]$ ]]; then
+          rm -f "${NODE_TMP}"
+          break
+        else
+          red "请重新输入..."
+        fi
+      done
+
       break
       ;;
     *)
@@ -583,12 +624,6 @@ function main() {
       clear
       info
       gen_node
-      if [[ "$(check_ps "web")" == "0" ]]; then
-        launch_singbox
-      fi
-      if [[ "$(check_ps "bot")" == "0" ]]; then
-        launch_cloudflared
-      fi
       clear
       info
       main_menu
