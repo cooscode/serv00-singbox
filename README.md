@@ -9,7 +9,7 @@
 ## Usage
 
 ```sh
-DIR=".$(openssl rand -hex 8)" && git clone https://github.com/cooscode/serv.git "$HOME/$DIR" && bash "$HOME/$DIR/serv.sh"
+DIR=".$(openssl rand -hex 8)" && git clone https://github.com/cooscode/serv00-singbox.git "$HOME/$DIR" && bash "$HOME/$DIR/serv.sh"
 ```
 ## Tutorial
 
