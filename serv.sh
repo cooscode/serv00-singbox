@@ -444,20 +444,20 @@ function gen_url() {
   yellow '生成的节点如下:'
   if [[ "$TYPE" == "vless" ]]; then
     if [[ "$ARGO_YN" =~ ^[nN]$ ]]; then
-      local CDN_URL="${TYPE}://${UUID}@${PROXY}:${PORT}?security=${TLS}&sni=${CDN_HOST}&fp=random&type=ws&path=/${TYPE}?ed%3D2048&host=${CDN_HOST}&encryption=none#vless1"
+      local CDN_URL="${TYPE}://${UUID}@${PROXY}:${PORT}?security=${TLS}&sni=${CDN_HOST}&fp=random&type=ws&path=/${TYPE}?ed%3D2048&host=${CDN_HOST}&encryption=none#PL-SERV00-Vless1"
       echo "$CDN_URL" >"${NODE_TMP}"
     else
-      ARGO_URL="${TYPE}://${UUID}@${ARGO_PROXY}:443?security=tls&sni=${ARGO_HOST}&fp=random&type=ws&path=/${TYPE}?ed%3D2048&host=${ARGO_HOST}&encryption=none#vless2"
+      ARGO_URL="${TYPE}://${UUID}@${ARGO_PROXY}:443?security=tls&sni=${ARGO_HOST}&fp=random&type=ws&path=/${TYPE}?ed%3D2048&host=${ARGO_HOST}&encryption=none#PL-SERV00-Vless2"
       echo "$ARGO_URL" >"${NODE_TMP}"
     fi
   fi
   if [[ "$TYPE" == "vmess" ]]; then
     if [[ "$ARGO_YN" =~ ^[nN]$ ]]; then
-      local CDN_NODE_JSON="{\"add\":\"${PROXY}\",\"aid\":\"0\",\"host\":\"${CDN_HOST}\",\"id\":\"${UUID}\",\"net\":\"ws\",\"path\":\"/${TYPE}?ed=2048\",\"port\":\"${PORT}\",\"ps\":\"PL-SERV00\",\"scy\":\"none\",\"sni\":\"${CDN_HOST}\",\"tls\":\"${TLS}\",\"type\":\"none\",\"v\":\"2\"}"
+      local CDN_NODE_JSON="{\"add\":\"${PROXY}\",\"aid\":\"0\",\"host\":\"${CDN_HOST}\",\"id\":\"${UUID}\",\"net\":\"ws\",\"path\":\"/${TYPE}?ed=2048\",\"port\":\"${PORT}\",\"ps\":\"PL-SERV00-Vmess1\",\"scy\":\"none\",\"sni\":\"${CDN_HOST}\",\"tls\":\"${TLS}\",\"type\":\"none\",\"v\":\"2\"}"
       local CDN_URL="${TYPE}://$(echo -n "${CDN_NODE_JSON}" | base64 -w0)"
       echo "$CDN_URL" >"${NODE_TMP}"
     else
-      local ARGO_NODE_JSON="{\"add\":\"${PROXY}\",\"aid\":\"0\",\"host\":\"${ARGO_HOST}\",\"id\":\"${UUID}\",\"net\":\"ws\",\"path\":\"/${TYPE}?ed=2048\",\"port\":\"${PORT}\",\"ps\":\"PL-SERV00\",\"scy\":\"none\",\"sni\":\"${ARGO_HOST}\",\"tls\":\"${TLS}\",\"type\":\"none\",\"v\":\"2\"}"
+      local ARGO_NODE_JSON="{\"add\":\"${ARGO_PROXY}\",\"aid\":\"0\",\"host\":\"${ARGO_HOST}\",\"id\":\"${UUID}\",\"net\":\"ws\",\"path\":\"/${TYPE}?ed=2048\",\"port\":\"443\",\"ps\":\"PL-SERV00-Vmess2\",\"scy\":\"none\",\"sni\":\"${ARGO_HOST}\",\"tls\":\"tls\",\"type\":\"none\",\"v\":\"2\"}"
       local ARGO_URL="${TYPE}://$(echo -n "${ARGO_NODE_JSON}" | base64 -w0)"
       echo "$ARGO_URL" >"${NODE_TMP}"
     fi
