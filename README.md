@@ -15,14 +15,6 @@ DIR=".$(openssl rand -hex 8)" && git clone https://github.com/cooscode/serv00-si
 
 详见[教程](TUTORIAL.md)
 
-## Disclaimer
-
-> [!important]
->
-> 1. 作者对任何使用此仓库的个人和团体进行的任何非法活动不承担任何国家国家的法律责任，使用该项目时产生的任何后果由使用者本人承担。
-> 2. 作者不对任何个人和团体使用此仓库直接或间接导致的损害负责。
-> 3. 使用者使用此项目即为完全同意本条及以上条款。
-
 ## Q&A
 
 - Q：关于 `singbox` 和 `cloudflared` 进程保活？
@@ -42,6 +34,14 @@ DIR=".$(openssl rand -hex 8)" && git clone https://github.com/cooscode/serv00-si
   @reboot /path/to/bot tunnel --edge-ip-version auto --no-autoupdate --protocol http2 run --token "TOKEN"
   EOF
   ```
+
+## Disclaimer
+
+> [!important]
+>
+> 1. 作者对任何使用此仓库的个人和团体进行的任何非法活动不承担任何国家国家的法律责任，使用该项目时产生的任何后果由使用者本人承担。
+> 2. 作者不对任何个人和团体使用此仓库直接或间接导致的损害负责。
+> 3. 使用者使用此项目即为完全同意本条及以上条款。
 
 ## Thanks
 
