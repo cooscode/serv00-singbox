@@ -23,6 +23,26 @@ DIR=".$(openssl rand -hex 8)" && git clone https://github.com/cooscode/serv00-si
 > 2. 作者不对任何个人和团体使用此仓库直接或间接导致的损害负责。
 > 3. 使用者使用此项目即为完全同意本条及以上条款。
 
+## Q&A
+
+- Q：关于 `singbox` 和 `cloudflared` 进程保活？
+
+  A：不建议使用 `crontab` 命令设置周期调度命令，因为可能会覆盖掉其他命令，建议直接在网页中设置添加 `cron job`：
+  
+  ```sh
+  @reboot /path/to/web run -c /path/to/vless_config.json
+  @reboot /path/to/bot tunnel --edge-ip-version auto --no-autoupdate --protocol http2 run --token "TOKEN"
+  ```
+  
+  如果你的 `cron job` 中没有其他进程，不用担心覆盖其他命令，可以使用如下命令：
+  
+  ```sh
+  cat << EOF | crontab -
+  @reboot /path/to/web run -c /path/to/vless_config.json
+  @reboot /path/to/bot tunnel --edge-ip-version auto --no-autoupdate --protocol http2 run --token "TOKEN"
+  EOF
+  ```
+
 ## Thanks
 
 感谢以下开源仓库提供的灵感
