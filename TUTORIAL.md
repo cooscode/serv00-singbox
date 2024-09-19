@@ -149,6 +149,7 @@ EOF
 
 ## 上面请填写web，bot，vless_config.json正确的位置，以及正确的token值。
 ```
+你可以使用如下命令查看你的 `cron jobs`是否有误：`crontab -l`；使用如下命令删除当前的`cron jobs`：`crontab -r`；使用如下命令手动编辑`cron jobs`：`crontab -e`
 
 > [!NOTE]
 >
