@@ -3,21 +3,21 @@
 ## 一、文件夹目录
 
 ```
-$HOME/.039cef99d03c521d/		项目文件夹
-├── bin							可执行文件文件夹
-│   ├── bot						cloudflared可执行文件（换了个名）
-│   └── web						singbox可执行文件（换了个名）
-├── config						配置文件夹
-│   ├── NODE_INFO.txt			节点信息
-│   ├── TOKEN					cloudflared TOKEN
-│   ├── UUID					节点的UUID
-│   └── vless_config.json		服务器端节点的json配置，如果是vmess则为vmess_config.json
+$HOME/.039cef99d03c521d/      项目文件夹
+├── bin                       可执行文件文件夹
+│   ├── bot                   cloudflared可执行文件（换了个名）
+│   └── web                   singbox可执行文件（换了个名）
+├── config                    配置文件夹
+│   ├── NODE_INFO.txt         节点信息
+│   ├── TOKEN                 cloudflared TOKEN
+│   ├── UUID                  节点的UUID
+│   └── vless_config.json     服务器端节点的json配置，如果是vmess则为vmess_config.json
 ├── img
 │   └── ...
 ├── LICENSE
 ├── README.md
-├── serv.sh						配置脚本
-└── TUTORIAL.md					教程
+├── serv.sh                   配置脚本
+└── TUTORIAL.md               教程
 ```
 
 ## 二、运行脚本
