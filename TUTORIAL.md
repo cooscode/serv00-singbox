@@ -125,11 +125,13 @@ DIR=".$(openssl rand -hex 8)" && git clone https://github.com/cooscode/serv00-si
 
 当你设置好节点之后，**必须**输入0保存，它还会问你是否保存，默认是N，如果你确定好就是使用这种节点方案之后输入y保存
 
-如果你此前已经运行了singbox和cloudlared，它会重新启动singbox和cloudflared并覆盖此前的节点信息，如果你此前没有运行singbox和cloudflared，它也不会给你启动它们，你需要手动输入3启动sing-box，然后输入4启动cloudflared
+如果你此前已经运行了singbox和cloudlared，它会重新启动singbox和cloudflared并覆盖此前的节点信息，如果你此前没有运行singbox和cloudflared，它也不会给你启动它们，你需要手动输入3启动sing-box，然后输入4启动cloudflared，如果你没有使用argo隧道，不用启动cloudflared，否则，必须启动它。
 
 ## 五、最后
 
 输入0退出脚本。
+
+可以运行命令 `ps aux`，查看singbox(web)或者cloudflared(bot)，是否在运行。
 
 ## 六、保活
 
