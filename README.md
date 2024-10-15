@@ -34,6 +34,13 @@ DIR=".$(openssl rand -hex 8)" && git clone https://github.com/cooscode/serv00-si
   @reboot /path/to/bot tunnel --edge-ip-version auto --no-autoupdate --protocol http2 run --token "TOKEN"
   EOF
   ```
+- Q: vless_config.json 中的 wireguard配置 能否使用自己生成的密钥对
+  A: 能，可以通过如下命令生成密钥对
+
+  ```sh
+  wg genkey > pri.key
+  wg pubkey < pri.key > pub.key
+  ```
 
 ## Disclaimer
 
