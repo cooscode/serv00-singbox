@@ -57,12 +57,11 @@ if [[ -f "${CONFIG}/TOKEN" ]]; then
 fi
 
 function get_download_url() {
-  #TODO: 选择架构
-  local ARCH="amd64"
+  local ARCH="$(uname -m)"
   if [[ "$1" == "web" ]]; then
-    echo "https://github.com/ansoncloud8/am-serv00-vmess/releases/download/1.0.0/amd64-web"
+    echo "https://github.com/cooscode/serv00-singbox/releases/download/1.0.0/sing-box-freebsd-$ARCH"
   else
-    echo "https://github.com/ansoncloud8/am-serv00-vmess/releases/download/1.0.0/amd64-bot"
+    echo "https://github.com/cooscode/serv00-singbox/releases/download/1.0.0/cloudflared-freebsd-$ARCH"
   fi
 }
 
